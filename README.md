@@ -42,10 +42,8 @@ The app requires YOLOv8 model files for crop disease detection. These are includ
 - `jowar.pt` (10MB) - Jowar disease detection
 - `Tomato.pt` (10MB) - Tomato disease detection
 
-**If models are missing:**
-1. Clone the repository (models are included)
-2. Or download from the releases page
-3. Or contact the maintainer for model files
+
+**Note:** The models are tracked with Git LFS for efficient storage and download.
 
 ## Database Setup
 **No SQL database required!** This app uses:
