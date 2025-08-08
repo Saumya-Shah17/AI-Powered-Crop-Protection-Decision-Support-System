@@ -105,20 +105,6 @@ If port 8000 is busy, change `port=` in `app.run(...)` in `app.py`.
 - The frontend no longer calls OpenWeatherMap directly.
 - Reverse geocoding is proxied through `POST /reverse_geocode` to keep keys server-side.
 
-## Deploying to GitHub
-1. Initialize Git and commit:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit: CropGuard"
-   ```
-2. Create a new GitHub repo and add it as remote:
-   ```bash
-   git remote add origin https://github.com/<your-username>/<repo-name>.git
-   git branch -M main
-   git push -u origin main
-   ```
-3. In your hosting (Render/Railway/Fly.io/etc.), set env vars: `FLASK_SECRET_KEY`, `OPENWEATHER_API_KEY`, `GROQ_API_KEY`, `SERPAPI_KEY`.
 
 ## Troubleshooting
 - macOS port 5000 may be used by AirPlay; this app uses 8000 by default.
@@ -128,4 +114,4 @@ If port 8000 is busy, change `port=` in `app.run(...)` in `app.py`.
 - ChromaDB issues → ensure `chromadb` is installed; collections auto-create on first run.
 
 ## License
-MIT (or add your preferred license).
+MIT License
