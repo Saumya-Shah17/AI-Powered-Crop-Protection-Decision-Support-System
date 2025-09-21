@@ -1,9 +1,19 @@
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_community.vectorstores import Chroma
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community import embeddings
+from langchain_community.chat_models import ChatOllama
+from langchain_ollama import OllamaEmbeddings
+from langchain_groq import ChatGroq
+import textwrap
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from ultralytics import YOLO
 import os
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
-import textwrap
 import requests
 from bot import sc
 import re,io,base64
@@ -265,11 +275,6 @@ def reverse_geocode():
 
 
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from langchain_groq import ChatGroq
-
 def extract_agricultural_products(text: str) -> list:
     """
     Extract agricultural product names from the given text using an LLM.
@@ -304,12 +309,6 @@ def extract_agricultural_products(text: str) -> list:
     if extracted_products:
         return [product.strip() for product in extracted_products.split(",")]
     return []
-
-
-
-
-
-
 
 
 
@@ -853,21 +852,6 @@ def generate_soil_graph(soil_data):
 
 
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from langchain_community.vectorstores import Chroma
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_community import embeddings
-from langchain.chat_models import ChatOllama
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_groq import ChatGroq
-import textwrap
-
-
-
-
 # Your loader and vectorstore setup code remains the same
 loader = PyPDFDirectoryLoader("new_data")
 the_text = loader.load()
@@ -883,7 +867,7 @@ retriever = vectorstore.as_retriever()
 
 llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY"),
-    model="llama3-8b-8192"
+    model="llama-3.1-8b-instant"
 )
 
 # Define agricultural analysis template

@@ -16,7 +16,7 @@ load_dotenv()
 # Initialize the Groq model
 llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY"),
-    model="llama3-8b-8192"
+    model="llama-3.1-8b-instant"
 )
 
 # Define the soil analysis template

@@ -4,7 +4,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_ollama import OllamaEmbeddings
+# from langchain_ollama import OllamaEmbeddings
 from langchain_groq import ChatGroq
 import os
 from dotenv import load_dotenv
@@ -17,16 +17,25 @@ def sc():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     docs = text_splitter.split_documents(the_text)
 
+    # Use a simple embedding approach instead of Ollama
+    try:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    except ImportError:
+        # Fallback to a simple dummy embedding if HuggingFace is not available
+        from langchain_community.embeddings import FakeEmbeddings
+        embedding = FakeEmbeddings(size=384)
+
     vectorstore = Chroma.from_documents(
         documents=docs,
         collection_name="ollama_embeds",
-        embedding=OllamaEmbeddings(model='nomic-embed-text'),
+        embedding=embedding,
     )
     retriever = vectorstore.as_retriever()
 
     llm = ChatGroq(
         api_key = os.getenv("GROQ_API_KEY"),
-        model="llama3-8b-8192"
+        model="llama-3.1-8b-instant"
     )
 
     rag_template = """
