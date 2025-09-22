@@ -70,8 +70,22 @@ def format_response(response):
     # Replace carriage returns
     response = response.replace('\r', '')
     
+    # Convert markdown-style headers to HTML
+    response = re.sub(r'^###\s+(.*?)$', r'<h5 class="mt-3 mb-2 text-primary">\1</h5>', response, flags=re.MULTILINE)
+    response = re.sub(r'^##\s+(.*?)$', r'<h4 class="mt-4 mb-3 text-success">\1</h4>', response, flags=re.MULTILINE)
+    response = re.sub(r'^#\s+(.*?)$', r'<h3 class="mt-4 mb-3">\1</h3>', response, flags=re.MULTILINE)
+    
     # Convert double asterisks to strong (bold) text
     response = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', response)
+    
+    # Convert single asterisks to italic text
+    response = re.sub(r'\*(.*?)\*', r'<em>\1</em>', response)
+    
+    # Convert numbered lists
+    response = re.sub(r'^(\d+\.\s+.*?)(?=\n\d+\.|\n\n|\Z)', r'<li>\1</li>', response, flags=re.MULTILINE | re.DOTALL)
+    
+    # Wrap consecutive list items in ol tags
+    response = re.sub(r'(<li>.*?</li>(?:\s*<li>.*?</li>)*)', r'<ol>\1</ol>', response, flags=re.DOTALL)
     
     # Remove colons after headings and labels
     response = re.sub(r':\s*', ' ', response)
@@ -85,15 +99,9 @@ def format_response(response):
             formatted_para = process_section(para)
             formatted_paragraphs.append(formatted_para)
     
-    # Add line breaks before the first numbered bullet
+    # Join paragraphs with proper spacing
     result = '<br><br>'.join(formatted_paragraphs)
     
-    # Replace numbered lists to ensure line breaks after each item
-    result = re.sub(r'(\d+\.\s*.*?)(?=\n\s*\d+\.|\n\s*$)', r'\1<br>', result)
-
-    # Add two line breaks after sections
-    result = re.sub(r'(\d+\.\s*.*?)(?=\n\s*\d+\.|\n\s*$)', r'\1<br><br>', result)
-
     # Clean up extra spaces and ensure proper line breaks between sections
     result = re.sub(r'\s+', ' ', result)
     result = re.sub(r'<br>\s*<br>', '<br><br>', result)
@@ -858,10 +866,14 @@ the_text = loader.load()
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 docs = text_splitter.split_documents(the_text)
 
+# Use FakeEmbeddings to avoid dependency issues
+from langchain_community.embeddings import FakeEmbeddings
+embedding = FakeEmbeddings(size=384)
+
 vectorstore = Chroma.from_documents(
     documents=docs,
     collection_name="ollama_embeds",
-    embedding=OllamaEmbeddings(model='nomic-embed-text'),
+    embedding=embedding,
 )
 retriever = vectorstore.as_retriever()
 
@@ -1037,7 +1049,7 @@ def analyze_finance():
         return jsonify({
             'location': location,
             'crop_type': crop_type,
-            'analysis': analysis
+            'analysis': format_response(analysis)
         }), 200
 
     except Exception as e:
