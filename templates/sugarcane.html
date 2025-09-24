@@ -335,7 +335,9 @@
                             productsContent.innerHTML = ''; // Clear previous content
         
                             if (data.products && data.products.length > 0) {
+                                console.log('Products data:', data.products);
                                 data.products.forEach(product => {
+                                    console.log('Product link:', product.link);
                                     const productHtml = `
                                         <div class="col-md-4 mb-4">
                                             <div class="card h-100">

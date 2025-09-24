@@ -48,67 +48,77 @@ if not os.path.exists(UPLOAD_FOLDER):
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 
 def format_response(response):
-    def process_section(section_text):
-        
-        # Match for bullet points starting with a single '*'
-        bullet_pattern = re.compile(r'^\s*\*\s*(.*?)(?=\n\s*\*|\n\s*$|$)', re.MULTILINE)
-        
-        if bullet_pattern.search(section_text):
-            items = bullet_pattern.findall(section_text)
-            
-            list_items = ''.join([f"<li>{item.strip()}</li>" for item in items])
-            
-            section_text = bullet_pattern.sub('', section_text)
-            
-            if section_text.strip():
-                return f"{section_text.strip()}<br><ul>{list_items}</ul>"
-            return f"<ul>{list_items}</ul>"
-        
-        return section_text.strip()
+    # Normalize newlines
+    response = (response or "").replace('\r', '').strip()
 
-    
-    # Replace carriage returns
-    response = response.replace('\r', '')
-    
-    # Convert markdown-style headers to HTML
+    # Markdown-style headers to HTML
     response = re.sub(r'^###\s+(.*?)$', r'<h5 class="mt-3 mb-2 text-primary">\1</h5>', response, flags=re.MULTILINE)
     response = re.sub(r'^##\s+(.*?)$', r'<h4 class="mt-4 mb-3 text-success">\1</h4>', response, flags=re.MULTILINE)
     response = re.sub(r'^#\s+(.*?)$', r'<h3 class="mt-4 mb-3">\1</h3>', response, flags=re.MULTILINE)
-    
-    # Convert double asterisks to strong (bold) text
+
+    # Bold/italic
     response = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', response)
-    
-    # Convert single asterisks to italic text
-    response = re.sub(r'\*(.*?)\*', r'<em>\1</em>', response)
-    
-    # Convert numbered lists
-    response = re.sub(r'^(\d+\.\s+.*?)(?=\n\d+\.|\n\n|\Z)', r'<li>\1</li>', response, flags=re.MULTILINE | re.DOTALL)
-    
-    # Wrap consecutive list items in ol tags
-    response = re.sub(r'(<li>.*?</li>(?:\s*<li>.*?</li>)*)', r'<ol>\1</ol>', response, flags=re.DOTALL)
-    
-    # Remove colons after headings and labels
-    response = re.sub(r':\s*', ' ', response)
-    
-    # Split the response into paragraphs
-    paragraphs = response.split('\n\n')
-    formatted_paragraphs = []
-    
-    for para in paragraphs:
-        if para.strip():
-            formatted_para = process_section(para)
-            formatted_paragraphs.append(formatted_para)
-    
-    # Join paragraphs with proper spacing
-    result = '<br><br>'.join(formatted_paragraphs)
-    
-    # Clean up extra spaces and ensure proper line breaks between sections
-    result = re.sub(r'\s+', ' ', result)
-    result = re.sub(r'<br>\s*<br>', '<br><br>', result)
-    result = re.sub(r'<br>\s*<(ul|ol)', r'<br><br><\1', result)
-    result = re.sub(r'(</ul>|</ol>)\s*<br>', r'\1<br><br>', result)
-    result = re.sub(r'^(<br>)+', '', result)
-    
+    response = re.sub(r'(?<!\*)\*(?!\*)(.*?)\*(?<!\*)', r'<em>\1</em>', response)
+
+    # Build HTML with lists and line breaks
+    html_parts = []
+    in_ul = False
+    in_ol = False
+    for raw_line in response.split('\n'):
+        line = raw_line.rstrip()
+        if not line.strip():
+            # Close any open list before paragraph break
+            if in_ul:
+                html_parts.append('</ul>')
+                in_ul = False
+            if in_ol:
+                html_parts.append('</ol>')
+                in_ol = False
+            html_parts.append('<br>')
+            continue
+
+        m_ul = re.match(r'^\s*[-\*]\s+(.*)$', line)
+        m_ol = re.match(r'^\s*(\d+)\.\s+(.*)$', line)
+
+        if m_ul:
+            if in_ol:
+                html_parts.append('</ol>')
+                in_ol = False
+            if not in_ul:
+                html_parts.append('<ul>')
+                in_ul = True
+            html_parts.append(f"<li>{m_ul.group(1).strip()}</li>")
+            continue
+
+        if m_ol:
+            if in_ul:
+                html_parts.append('</ul>')
+                in_ul = False
+            if not in_ol:
+                html_parts.append('<ol>')
+                in_ol = True
+            html_parts.append(f"<li>{m_ol.group(2).strip()}</li>")
+            continue
+
+        # Normal text line
+        if in_ul:
+            html_parts.append('</ul>')
+            in_ul = False
+        if in_ol:
+            html_parts.append('</ol>')
+            in_ol = False
+        html_parts.append(line)
+
+    # Close any remaining open lists
+    if in_ul:
+        html_parts.append('</ul>')
+    if in_ol:
+        html_parts.append('</ol>')
+
+    # Join and tidy minimal breaks
+    result = ''.join(html_parts)
+    result = re.sub(r'(</ul>|</ol>)(?!<br>)', r'\1', result)
+    result = re.sub(r'(</ul>|</ol>)<br>(?!<)', r'\1<br>', result)
     return result.strip()
 
 def chat(p):
@@ -978,9 +988,8 @@ def analyze_agricultural_project(
         # Get the analysis
         response = agri_chain.invoke(input_data)
         
-        # Format the output
-        formatted_response = textwrap.fill(response, width=100)
-        return formatted_response
+        # Return raw response; formatting handled by format_response for HTML
+        return response
     
     except Exception as e:
         return f"Error during analysis: {str(e)}"
@@ -1008,9 +1017,8 @@ def analyze_agricultural_project(
         # Get the analysis
         response = agri_chain.invoke(input_data)
         
-        # Format the output
-        formatted_response = textwrap.fill(response, width=100)
-        return formatted_response
+        # Return raw response; formatting handled by format_response for HTML
+        return response
     
     except Exception as e:
         return f"Error during analysis: {str(e)}"
